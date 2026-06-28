@@ -71,6 +71,32 @@ const verifyToken = async (req, res, next) => {
     next();
 }
 
+const verifyAdmin = async (req, res, next) => {
+    if (req.user?.role !== 'admin') {
+        return res.status(403).send({ message: 'Forbidden Access' })
+    }
+    next();
+}
+
+const verifyArtist = async (req, res, next) => {
+
+    if (req.user?.role !== 'artist') {
+        return res.status(403).send({ message: 'Forbidden Access' })
+    }
+
+    next();
+}
+
+const verifyUser = async (req, res, next) => {
+
+    if (req.user?.role !== 'user') {
+        return res.status(403).send({ message: 'Forbidden Access' })
+    }
+
+    next();
+}
+
+
 
 
 app.listen(port, () => {
