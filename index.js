@@ -192,6 +192,25 @@ app.patch('/api/update-purchase-count/:userId', verifyToken, async (req, res) =>
     res.send(result);
 })
 
+app.patch('/api/update-user-details/:userId', verifyToken, async (req, res) => {
+    const id = req.params.userId;
+    const { name, email } = req.body;
+
+    const filter = {
+        _id: new ObjectId(id)
+    }
+
+    const updateDoc = {
+        $set: {
+            name: name,
+            email: email
+        }
+    }
+
+    const result = await userCollection.updateOne(filter, updateDoc);
+    res.send(result);
+})
+
 
 
 app.listen(port, () => {
