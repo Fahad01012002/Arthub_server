@@ -325,6 +325,35 @@ app.get('/api/user-transaction-history/:buyerId', verifyToken, async (req, res) 
     }
 });
 
+app.patch('/api/update-status/:artworkId', verifyToken, async (req, res) => {
+    const id = req.params.artworkId;
+    const updatedStatus = req.body;
+
+    const filter = {
+        _id: new ObjectId(id)
+    }
+
+    const updateDoc = {
+        $set: {
+            Status: updatedStatus?.status
+        }
+    }
+
+    const result = await paintingCardCollection.updateOne(filter, updateDoc);
+    res.send(result);
+})
+
+app.get('/api/user/:userId', verifyToken, async (req, res) => {
+    const id = req.params.userId;
+
+    const filter = {
+        _id: new ObjectId(id)
+    }
+
+    const result = await userCollection.findOne(filter);
+    res.send(result);
+})
+
 
 
 app.listen(port, () => {
