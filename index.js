@@ -365,6 +365,29 @@ app.get('/api/artwork-transaction/:userId', verifyToken, async (req, res) => {
     res.send(result);
 })
 
+app.get('/api/user/:userId', verifyToken, async (req, res) => {
+    const id = req.params.userId;
+
+    const filter = {
+        _id: new ObjectId(id)
+    }
+
+    const result = await userCollection.findOne(filter);
+    res.send(result);
+})
+
+app.get('/api/getArtworksById/:artistId', verifyToken, async (req, res) => {
+    const artistId = req.params.artistId;
+
+    const filter = {
+        userId: artistId
+    };
+
+    const result = await paintingCardCollection.find(filter).toArray();
+
+    res.send(result);
+});
+
 app.listen(port, () => {
     console.log(`Example app listening on port ${port}`);
 });
