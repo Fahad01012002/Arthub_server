@@ -470,6 +470,34 @@ app.patch('/api/update-role/:userId', verifyToken, async (req, res) => {
     }
 });
 
+app.delete('/api/artwork/:artworkId', verifyToken, async (req, res) => {
+    try {
+        const id = req.params.artworkId;
+
+        const filter = {
+            _id: new ObjectId(id)
+        };
+
+        const result = await paintingCardCollection.deleteOne(filter);
+
+        if (result.deletedCount === 0) {
+            return res.status(404).send({ message: "Artwork not found" });
+        }
+
+        res.send({
+            success: true,
+            message: "Artwork deleted successfully",
+            deletedCount: result.deletedCount
+        });
+
+    } catch (error) {
+        res.status(500).send({
+            success: false,
+            message: error.message
+        });
+    }
+});
+
 app.listen(port, () => {
     console.log(`Example app listening on port ${port}`);
 });
