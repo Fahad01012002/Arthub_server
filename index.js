@@ -143,6 +143,38 @@ app.get('/api/artwork-details/:id', async (req, res) => {
     }
 });
 
+app.get('/api/plans/:id', verifyToken, async (req, res) => {
+    const planId = req.params.id;
+
+    const filter = {
+        id: planId
+    }
+
+    const cursor = await planCollection.findOne(filter);
+    res.send(cursor);
+
+})
+
+app.get('/api/transaction-history', verifyToken, async (req, res) => {
+    const cursor = transactionCollection.find();
+    const result = await cursor.toArray();
+
+    res.send(result);
+})
+
+app.post('/api/artistcard', verifyToken, async (req, res) => {
+    const data = req.body;
+
+    const cardInfo = {
+        ...data,
+        createdAt: new Date()
+    }
+
+    const result = await paintingCardCollection.insertOne(cardInfo);
+    res.send(result);
+})
+
+
 
 
 
