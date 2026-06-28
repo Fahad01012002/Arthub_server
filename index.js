@@ -211,6 +211,40 @@ app.patch('/api/update-user-details/:userId', verifyToken, async (req, res) => {
     res.send(result);
 })
 
+app.get('/api/user-purchased-artworks/:buyerId', verifyToken, async (req, res) => {
+    try {
+        const { buyerId } = req.params;
+
+        // ১. ট্রানজেকশন কালেকশন থেকে ওই buyerId এর সব সফল ('success') কেনাকাটার ডাটা বের করা
+        const transactions = await transactionCollection.find({
+            buyerId: buyerId,
+            status: "success",
+            type: "Purchase"
+        }).toArray();
+
+        // ইউজার যদি এখনও কিছু না কিনে থাকে
+        if (!transactions || transactions.length === 0) {
+            return res.status(200).send([]);
+        }
+
+        // ২. সব ট্রানজেকশন থেকে artworkId গুলো বের করে একটা Clean Array তৈরি করা
+        // এবং সেগুলোকে MongoDB এর 'ObjectId' তে কনভার্ট করা
+        const artworkIds = transactions.map(item => new ObjectId(item.artworkId));
+
+        // ৩. $in অপারেটর দিয়ে একবারে সব আর্টওয়ার্কের ডিটেইলস নিয়ে আসা
+        const purchasedArtworks = await paintingCardCollection.find({
+            _id: { $in: artworkIds }
+        }).toArray();
+
+        // ৪. ফ্রন্টএন্ডে একবারে সব আর্টওয়ার্কের ডিটেইলস অ্যারে আকারে রেসপন্স পাঠানো
+        res.status(200).send(purchasedArtworks);
+
+    } catch (error) {
+        console.error("Error fetching purchased artworks:", error);
+        res.status(500).send({ message: "Internal server error", error: error.message });
+    }
+});
+
 
 
 app.listen(port, () => {
