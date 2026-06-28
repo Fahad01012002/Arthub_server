@@ -96,6 +96,19 @@ const verifyUser = async (req, res, next) => {
     next();
 }
 
+app.get('/api/artworks', async (req, res) => {
+    const cursor = paintingCardCollection.find();
+    const result = await cursor.toArray();
+
+    res.json(result);
+})
+
+app.get('/api/all-users', verifyToken, async (req, res) => {
+    const cursor = userCollection.find();
+    const result = await cursor.toArray();
+
+    res.send(result);
+})
 
 
 
