@@ -174,7 +174,23 @@ app.post('/api/artistcard', verifyToken, async (req, res) => {
     res.send(result);
 })
 
+app.patch('/api/update-purchase-count/:userId', verifyToken, async (req, res) => {
+    const id = req.params.userId;
+    const upadatedUser = req.body;
 
+    const filter = {
+        _id: new ObjectId(id)
+    }
+
+    const updatedDoc = {
+        $inc: {
+            purchaseCount: 1
+        }
+    }
+
+    const result = await userCollection.updateOne(filter, updatedDoc);
+    res.send(result);
+})
 
 
 
