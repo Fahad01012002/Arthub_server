@@ -388,6 +388,28 @@ app.get('/api/getArtworksById/:artistId', verifyToken, async (req, res) => {
     res.send(result);
 });
 
+app.patch('/api/artistcard/:id', verifyToken, async (req, res) => {
+
+    const id = req.params.id;
+    const body = req.body;
+
+    const filter = {
+        _id: new ObjectId(id)
+    }
+
+    const updatedDoc = {
+        $set: {
+            title: body.title,
+            category: body.category,
+            price: body.price,
+            description: body.description
+        }
+    }
+
+    const result = await paintingCardCollection.updateOne(filter, updatedDoc);
+    res.send(result);
+})
+
 app.listen(port, () => {
     console.log(`Example app listening on port ${port}`);
 });
