@@ -410,6 +410,66 @@ app.patch('/api/artistcard/:id', verifyToken, async (req, res) => {
     res.send(result);
 })
 
+app.patch('/api/update-user/:id', verifyToken, async (req, res) => {
+    const id = req.params.id;
+    const { planId } = req.body;
+
+    const filter = {
+        _id: new ObjectId(id)
+    }
+
+    const updateDoc = {
+        $set: {
+            plan: planId
+        }
+    }
+
+    const result = await userCollection.updateOne(filter, updateDoc);
+    res.send(result);
+})
+
+app.patch('/api/update-role/:userId', verifyToken, async (req, res) => {
+    try {
+        const id = req.params.userId;
+        const { newRole } = req.body;
+
+        if (!id || id === 'undefined') {
+            return res.status(400).json({ success: false, message: "Invalid User ID" });
+        }
+
+        let newPlan = '';
+
+        if (newRole === 'artist') {
+            newPlan = 'artist'
+        }
+        if (newRole === 'user') {
+            newPlan = 'user_free'
+        }
+        if (newRole === 'admin') {
+            newPlan = 'admin'
+        }
+
+        const filter = {
+            _id: new ObjectId(id)
+        };
+
+        const updateDoc = {
+            $set: {
+                role: newRole,
+                plan: newPlan
+            }
+        };
+
+        const result = await userCollection.updateOne(filter, updateDoc);
+
+        // ফ্রন্টএন্ডকে সবসময় স্পষ্ট JSON রেসপন্স পাঠানো ভালো
+        res.json({ success: true, result });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
 app.listen(port, () => {
     console.log(`Example app listening on port ${port}`);
 });
