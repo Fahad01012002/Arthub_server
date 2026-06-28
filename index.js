@@ -245,6 +245,86 @@ app.get('/api/user-purchased-artworks/:buyerId', verifyToken, async (req, res) =
     }
 });
 
+app.get('/api/user-transaction-history/:buyerId', verifyToken, async (req, res) => {
+    try {
+        const { buyerId } = req.params;
+
+        const transactions = await transactionCollection.find({
+            buyerId: buyerId,
+            status: "success",
+            $or: [
+                { type: "Purchase" },
+                { type: "Subscription" }
+            ]
+        }).sort({ createdAt: -1 }).toArray();
+
+        // ইউজার যদি কোনো কেনাকাটা বা সাবস্ক্রিপশন না করে থাকে, তবে খালি অ্যারে রিটার্ন করবে
+        if (!transactions || transactions.length === 0) {
+            return res.status(200).json([]);
+        }
+
+        // ২. ট্রানজেকশনগুলো থেকে শুধুমাত্র ভ্যালিড artworkId গুলো ফিল্টার করে একটি অ্যারে তৈরি করা
+        const artworkIds = transactions
+            .filter(item => item.artworkId && ObjectId.isValid(item.artworkId))
+            .map(item => new ObjectId(item.artworkId));
+
+        // ৩. যদি ভ্যালিড artworkId থেকে থাকে, তবে একবারে paintingCardCollection থেকে সব আর্টওয়ার্কের ডিটেইলস নিয়ে আসা
+        let artworksMap = {};
+        if (artworkIds.length > 0) {
+            const artworks = await paintingCardCollection.find({
+                _id: { $in: artworkIds }
+            }).toArray();
+
+            // ডাটা সহজে ম্যাচ করার জন্য একটি অবজেক্ট ম্যাপ (Map) তৈরি করা যেন লুপের ভেতর বারবার ডাটাবেজ হিট না হয়
+            artworksMap = artworks.reduce((acc, art) => {
+                acc[art._id.toString()] = art;
+                return acc;
+            }, {});
+        }
+
+        // ৪. ট্রানজেকশন ডাটা এবং আর্টওয়ার্ক ডিটেইলস কম্বাইন করে ফ্রন্টএন্ডের টেবিল ডিজাইনের উপযোগী ফরম্যাট তৈরি করা
+        const transactionHistory = transactions.map((tx, index) => {
+            // ট্রানজেকশনের artworkId দিয়ে ম্যাপ থেকে নির্দিষ্ট আর্টওয়ার্কের ডাটা খুঁজে বের করা
+            const associatedArtwork = tx.artworkId ? artworksMap[tx.artworkId.toString()] : null;
+
+            // ISO ডেট ফরম্যাট (2026-06-23T08:00:59...) থেকে শুধুমাত্র YYYY-MM-DD ফরম্যাটে ডেট আলাদা করা
+            const formattedDate = tx.createdAt
+                ? new Date(tx.createdAt).toISOString().split('T')[0]
+                : "N/A";
+
+            return {
+                _id: tx._id,
+                // আপনার UI ডিজাইন অনুযায়ী সুন্দর সিরিয়াল TXN আইডি জেনারেট করা (যেমন: TXN-001, TXN-002)
+                transactionId: `TXN-${String(index + 1).padStart(3, '0')}`,
+
+                // যদি আর্টওয়ার্ক থাকে তবে তার টাইটেল, নতুবা সাবস্ক্রিপশন প্ল্যানের নাম (যেমন: Premium Plan)
+                artworkName: associatedArtwork ? associatedArtwork.title : (tx.planName || "Premium Subscription"),
+
+                // আর্টওয়ার্ক থাকলে আর্টিস্টের নাম, না থাকলে সাবস্ক্রিপশনের জন্য 'System'
+                artistName: associatedArtwork ? "Leila Nasser" : "System",
+
+                // ট্রানজেকশনের অ্যামাউন্ট, কোনো কারণে অ্যামাউন্ট না থাকলে আর্টওয়ার্কের ডিফল্ট প্রাইস
+                price: tx.amount || (associatedArtwork ? associatedArtwork.price : 0),
+                date: formattedDate,
+
+                // স্ট্যাটাস 'success' হলে UI-তে 'Completed' দেখাবে
+                status: tx.status === "success" ? "Completed" : tx.status,
+                type: tx.type // 'Purchase' নাকি 'Subscription' তা ট্র‍্যাক রাখার জন্য
+            };
+        });
+
+        // ৫. ফাইনাল কম্বাইন্ড ডাটা রেসপন্স পাঠানো
+        res.status(200).json(transactionHistory);
+
+    } catch (error) {
+        console.error("Error fetching transaction history:", error);
+        res.status(500).json({
+            message: "Internal server error",
+            error: error.message
+        });
+    }
+});
+
 
 
 app.listen(port, () => {
