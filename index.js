@@ -110,6 +110,40 @@ app.get('/api/all-users', verifyToken, async (req, res) => {
     res.send(result);
 })
 
+app.get('/api/artwork-details/:id', async (req, res) => {
+
+    try {
+        const id = req.params.id;
+
+        const filter = {
+            _id: new ObjectId(id)
+        };
+
+        const artwork = await paintingCardCollection.findOne(filter);
+
+        if (!artwork) {
+            return res.status(404).send({ message: "Artwork not found" });
+        }
+
+        const userFilter = {
+            _id: new ObjectId(artwork.userId)
+        };
+
+        const artist = await userCollection.findOne(userFilter);
+
+        artwork.artistName = artist?.name || "Unknown Artist";
+        artwork.plan = artist?.plan || "user_free";
+
+        res.send(artwork);
+
+    } catch (error) {
+        res.status(500).send({
+            message: error.message || "Server Error"
+        });
+    }
+});
+
+
 
 
 app.listen(port, () => {
