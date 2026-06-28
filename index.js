@@ -354,7 +354,16 @@ app.get('/api/user/:userId', verifyToken, async (req, res) => {
     res.send(result);
 })
 
+app.get('/api/artwork-transaction/:userId', verifyToken, async (req, res) => {
+    const id = req.params.userId;
 
+    const filter = {
+        userId: id
+    }
+
+    const result = await transactionCollection.find(filter).toArray();
+    res.send(result);
+})
 
 app.listen(port, () => {
     console.log(`Example app listening on port ${port}`);
